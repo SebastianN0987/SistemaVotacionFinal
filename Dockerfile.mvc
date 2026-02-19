@@ -27,4 +27,4 @@ COPY --from=build /app/publish .
 EXPOSE 80
 ENV ASPNETCORE_URLS=http://+:80
 
-ENTRYPOINT ["dotnet", "SistemaVoto.MVC.dll"]
+ENTRYPOINT ["dotnet", "SistemaVoto.MVC.dll"] 

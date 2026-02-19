@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SistemaVoto.Data.Data;
 using SistemaVoto.MVC.Services;
@@ -15,7 +15,7 @@ namespace SistemaVoto.MVC
             var builder = WebApplication.CreateBuilder(args);
 
             // ============================================================
-            // 1. CONFIGURACI�N DE LA API (PUNTO DE CONEXI�N)
+            // 1. CONFIGURACIÓN DE LA API (PUNTO DE CONEXIÓN)
             // ============================================================
             var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://sistema-voto-api.onrender.com";
             apiBaseUrl = apiBaseUrl.TrimEnd('/');
@@ -38,7 +38,7 @@ namespace SistemaVoto.MVC
             Crud<EleccionUbicacion>.UrlBase = $"{apiBaseUrl}/api/eleccionubicaciones";
 
             // ============================================================
-            // 2. CONFIGURACI�N DE BASE DE DATOS (POSTGRESQL)
+            // 2. CONFIGURACIÓN DE BASE DE DATOS (POSTGRESQL)
             // ============================================================
             var connectionString = builder.Configuration.GetConnectionString("DbContext.postgres-render")
                 ?? builder.Configuration.GetConnectionString("DefaultConnection");
@@ -75,7 +75,7 @@ namespace SistemaVoto.MVC
             // ============================================================
             builder.Services.AddHttpContextAccessor();
 
-            // ---> NUEVO: CONFIGURACI�N DEL PROXY PARA RENDER <---
+            // ---> CONFIGURACIÓN DEL PROXY PARA RENDER <---
             builder.Services.Configure<ForwardedHeadersOptions>(options =>
             {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -107,8 +107,15 @@ namespace SistemaVoto.MVC
             // 5. PIPELINE DE SOLICITUDES HTTP
             // ============================================================
 
-            // ---> NUEVO: MIDDLEWARE DEL PROXY (Debe ir al inicio del pipeline) <---
+            // ---> MIDDLEWARE DEL PROXY <---
             app.UseForwardedHeaders();
+
+            // ⚠️ TRUCO DEFINITIVO: Forzar el esquema a HTTPS para que Identity no rechace el Login
+            app.Use(async (context, next) =>
+            {
+                context.Request.Scheme = "https";
+                await next();
+            });
 
             if (!app.Environment.IsDevelopment())
             {
@@ -116,7 +123,9 @@ namespace SistemaVoto.MVC
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            // ⚠️ IMPORTANTE: Desactivar HttpsRedirection para evitar choques con el proxy de Render
+            // app.UseHttpsRedirection();
+
             app.UseStaticFiles();
             app.UseRouting();
 
@@ -128,7 +137,7 @@ namespace SistemaVoto.MVC
                 pattern: "{controller=Home}/{action=Index}/{id?}");
             app.MapRazorPages();
 
-            // Seed de roles y administrador al iniciar la aplicaci�n
+            // Seed de roles y administrador al iniciar la aplicación
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
