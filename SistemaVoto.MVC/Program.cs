@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using SistemaVoto.Data.Data;
 using SistemaVoto.MVC.Services;
 using SistemaVoto.ApiConsumer;
 using SistemaVoto.Modelos;
-using Microsoft.AspNetCore.HttpOverrides;
 
 namespace SistemaVoto.MVC
 {
@@ -15,7 +16,7 @@ namespace SistemaVoto.MVC
             var builder = WebApplication.CreateBuilder(args);
 
             // ============================================================
-            // 1. CONFIGURACIÓN DE LA API (PUNTO DE CONEXIÓN)
+            // 1. CONFIGURACIÓN DE LA API
             // ============================================================
             var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://sistema-voto-api.onrender.com";
             apiBaseUrl = apiBaseUrl.TrimEnd('/');
@@ -25,10 +26,8 @@ namespace SistemaVoto.MVC
                 apiBaseUrl = "https://sistema-voto-api.onrender.com";
             }
 
-            // Limpieza de URL para evitar errores de formato
             apiBaseUrl = apiBaseUrl.TrimEnd('/');
 
-            // Configurar URLs globales para el consumidor de API (Crud<T>)
             Crud<Eleccion>.UrlBase = $"{apiBaseUrl}/api/elecciones";
             Crud<Candidato>.UrlBase = $"{apiBaseUrl}/api/candidatos";
             Crud<Voto>.UrlBase = $"{apiBaseUrl}/api/votos";
@@ -38,7 +37,7 @@ namespace SistemaVoto.MVC
             Crud<EleccionUbicacion>.UrlBase = $"{apiBaseUrl}/api/eleccionubicaciones";
 
             // ============================================================
-            // 2. CONFIGURACIÓN DE BASE DE DATOS (POSTGRESQL)
+            // 2. CONFIGURACIÓN DE BASE DE DATOS
             // ============================================================
             var connectionString = builder.Configuration.GetConnectionString("DbContext.postgres-render")
                 ?? builder.Configuration.GetConnectionString("DefaultConnection");
@@ -68,23 +67,26 @@ namespace SistemaVoto.MVC
                 options.AccessDeniedPath = "/Auth/AccessDenied";
                 options.ExpireTimeSpan = TimeSpan.FromHours(4);
                 options.SlidingExpiration = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });
 
             // ============================================================
-            // 4. REGISTRO DE SERVICIOS
+            // 4. REGISTRO DE SERVICIOS Y PROXY
             // ============================================================
             builder.Services.AddHttpContextAccessor();
 
-            // ---> CONFIGURACIÓN DEL PROXY PARA RENDER <---
             builder.Services.Configure<ForwardedHeadersOptions>(options =>
             {
-                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                // Limpiamos las redes para aceptar el balanceador de carga de Render
+                options.ForwardedHeaders = ForwardedHeaders.All;
                 options.KnownNetworks.Clear();
                 options.KnownProxies.Clear();
             });
 
-            // Cliente HTTP configurado con la URL de la API de Render
+            builder.Services.AddAntiforgery(options =>
+            {
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            });
+
             builder.Services.AddHttpClient<ApiService>(client =>
             {
                 client.BaseAddress = new Uri(apiBaseUrl + "/");
@@ -94,8 +96,6 @@ namespace SistemaVoto.MVC
             builder.Services.AddScoped<CalculoEscanosService>();
             builder.Services.AddScoped<LocalCrudService>();
             builder.Services.AddScoped<ElectionManagerService>();
-
-            // Servicio en segundo plano para procesar estados de elecciones
             builder.Services.AddHostedService<ElectionBackgroundService>();
 
             builder.Services.AddControllersWithViews();
@@ -106,11 +106,8 @@ namespace SistemaVoto.MVC
             // ============================================================
             // 5. PIPELINE DE SOLICITUDES HTTP
             // ============================================================
-
-            // ---> MIDDLEWARE DEL PROXY <---
             app.UseForwardedHeaders();
 
-            // ⚠️ TRUCO DEFINITIVO: Forzar el esquema a HTTPS para que Identity no rechace el Login
             app.Use(async (context, next) =>
             {
                 context.Request.Scheme = "https";
@@ -123,9 +120,6 @@ namespace SistemaVoto.MVC
                 app.UseHsts();
             }
 
-            // ⚠️ IMPORTANTE: Desactivar HttpsRedirection para evitar choques con el proxy de Render
-            // app.UseHttpsRedirection();
-
             app.UseStaticFiles();
             app.UseRouting();
 
@@ -137,7 +131,6 @@ namespace SistemaVoto.MVC
                 pattern: "{controller=Home}/{action=Index}/{id?}");
             app.MapRazorPages();
 
-            // Seed de roles y administrador al iniciar la aplicación
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
