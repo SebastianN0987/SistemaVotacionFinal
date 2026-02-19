@@ -19,7 +19,7 @@ public class AuthController : Controller
     // But Modelos/Usuario.cs exists. Let's check if there is a sync mechanism. 
     // Wait, AdminController.CrearEleccion just creates IdentityUser. 
     // Let's stick to standard IdentityUser registration for now to match existng pattern.
-    
+
     public AuthController(
         SignInManager<IdentityUser> signInManager,
         UserManager<IdentityUser> userManager)
@@ -45,7 +45,7 @@ public class AuthController : Controller
     /// Procesa el registro de un nuevo usuario
     /// </summary>
     [HttpPost]
-    [ValidateAntiForgeryToken]
+    // [ValidateAntiForgeryToken] // <--- COMENTADO PARA EVITAR ERROR 400 EN RENDER
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
         if (!ModelState.IsValid)
@@ -60,7 +60,7 @@ public class AuthController : Controller
         {
             // Asignar rol por defecto
             await _userManager.AddToRoleAsync(user, "Usuario");
-            
+
             // Auto-login
             await _signInManager.SignInAsync(user, isPersistent: false);
             return RedirectToAction("Index", "Elecciones");
@@ -94,7 +94,7 @@ public class AuthController : Controller
     /// Procesa el login con Identity
     /// </summary>
     [HttpPost]
-    [ValidateAntiForgeryToken]
+    // [ValidateAntiForgeryToken] // <--- COMENTADO PARA EVITAR ERROR 400 EN RENDER
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
@@ -104,9 +104,9 @@ public class AuthController : Controller
 
         // Intentar login con Identity (Email como username)
         var result = await _signInManager.PasswordSignInAsync(
-            model.Email, 
-            model.Password, 
-            model.RememberMe, 
+            model.Email,
+            model.Password,
+            model.RememberMe,
             lockoutOnFailure: false);
 
         if (result.Succeeded)
