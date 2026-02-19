@@ -1,9 +1,10 @@
-    using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SistemaVoto.Data.Data;
 using SistemaVoto.MVC.Services;
 using SistemaVoto.ApiConsumer;
 using SistemaVoto.Modelos;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace SistemaVoto.MVC
 {
@@ -16,13 +17,13 @@ namespace SistemaVoto.MVC
             // ============================================================
             // 1. CONFIGURACIÓN DE LA API (PUNTO DE CONEXIÓN)
             // ============================================================
-            // Prioridad: Variable de entorno de Render > appsettings.json > URL por defecto
             var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://sistema-voto-api.onrender.com";
-apiBaseUrl = apiBaseUrl.TrimEnd('/');
+            apiBaseUrl = apiBaseUrl.TrimEnd('/');
 
-if (string.IsNullOrEmpty(apiBaseUrl)) {
-    apiBaseUrl = "https://sistema-voto-api.onrender.com";
-}
+            if (string.IsNullOrEmpty(apiBaseUrl))
+            {
+                apiBaseUrl = "https://sistema-voto-api.onrender.com";
+            }
 
             // Limpieza de URL para evitar errores de formato
             apiBaseUrl = apiBaseUrl.TrimEnd('/');
@@ -74,6 +75,15 @@ if (string.IsNullOrEmpty(apiBaseUrl)) {
             // ============================================================
             builder.Services.AddHttpContextAccessor();
 
+            // ---> NUEVO: CONFIGURACIÓN DEL PROXY PARA RENDER <---
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                // Limpiamos las redes para aceptar el balanceador de carga de Render
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
             // Cliente HTTP configurado con la URL de la API de Render
             builder.Services.AddHttpClient<ApiService>(client =>
             {
@@ -87,7 +97,7 @@ if (string.IsNullOrEmpty(apiBaseUrl)) {
 
             // Servicio en segundo plano para procesar estados de elecciones
             builder.Services.AddHostedService<ElectionBackgroundService>();
-    
+
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
 
@@ -96,6 +106,10 @@ if (string.IsNullOrEmpty(apiBaseUrl)) {
             // ============================================================
             // 5. PIPELINE DE SOLICITUDES HTTP
             // ============================================================
+
+            // ---> NUEVO: MIDDLEWARE DEL PROXY (Debe ir al inicio del pipeline) <---
+            app.UseForwardedHeaders();
+
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
