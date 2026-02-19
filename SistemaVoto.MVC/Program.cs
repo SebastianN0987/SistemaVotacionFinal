@@ -17,8 +17,12 @@ namespace SistemaVoto.MVC
             // 1. CONFIGURACIÓN DE LA API (PUNTO DE CONEXIÓN)
             // ============================================================
             // Prioridad: Variable de entorno de Render > appsettings.json > URL por defecto
-            var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
-                ?? "https://sistema-voto-api.onrender.com"; // Tu nueva URL de producción
+            var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://sistema-voto-api.onrender.com";
+apiBaseUrl = apiBaseUrl.TrimEnd('/');
+
+if (string.IsNullOrEmpty(apiBaseUrl)) {
+    apiBaseUrl = "https://sistema-voto-api.onrender.com";
+}
 
             // Limpieza de URL para evitar errores de formato
             apiBaseUrl = apiBaseUrl.TrimEnd('/');
