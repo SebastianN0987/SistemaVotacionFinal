@@ -1,0 +1,138 @@
+﻿@{
+    ViewData["Title"] = "Términos y Condiciones";
+}
+
+<div class="elecciones-container animate-fadeIn">
+    <div class="page-header text-center" style="text-align: center; margin-bottom: 3rem;">
+        <div class="icon-wrapper" style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: rgba(var(--color-info-rgb), 0.1); border-radius: 50%; margin-bottom: 1rem;">
+            <i data-lucide="scale" style="width: 36px; height: 36px; color: var(--color-info);"></i>
+        </div>
+        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">@ViewData["Title"]</h1>
+        <p class="text-muted" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+            Reglas claras para un proceso transparente. Conoce las normativas de uso de nuestra plataforma de Voto Electrónico.
+        </p>
+    </div>
+
+    <div class="policy-container">
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="check-square" class="policy-icon text-primary"></i>
+                <h3 class="eleccion-title">1. Aceptación de los Términos</h3>
+            </div>
+            <p class="eleccion-desc">
+                Al acceder y utilizar este Sistema de Voto Electrónico, usted acepta estar sujeto a estos Términos y Condiciones. Si no está de acuerdo con alguna parte de los mismos, no podrá participar en los procesos electorales alojados en esta plataforma.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="user-check" class="policy-icon text-success"></i>
+                <h3 class="eleccion-title">2. Elegibilidad y Credenciales</h3>
+            </div>
+            <p class="eleccion-desc">
+                El derecho al voto es personal e intransferible. El usuario se compromete a mantener la confidencialidad de sus credenciales de acceso (usuario y contraseña). Cualquier actividad realizada desde su cuenta será considerada como su responsabilidad directa.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="vote" class="policy-icon text-warning"></i>
+                <h3 class="eleccion-title">3. Emisión del Voto</h3>
+            </div>
+            <p class="eleccion-desc">
+                El sistema permite registrar un único voto por usuario para cada proceso electoral habilitado. Una vez que el voto es confirmado en el sistema, este es definitivo y no podrá ser modificado, anulado ni revertido bajo ninguna circunstancia.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="ban" class="policy-icon text-danger"></i>
+                <h3 class="eleccion-title">4. Uso Prohibido</h3>
+            </div>
+            <p class="eleccion-desc">
+                Queda estrictamente prohibido cualquier intento de manipular el sistema, alterar los resultados, realizar ataques de denegación de servicio (DDoS), suplantar la identidad de otros votantes o utilizar software automatizado (bots) para influir en las elecciones.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="server" class="policy-icon text-info"></i>
+                <h3 class="eleccion-title">5. Disponibilidad del Sistema</h3>
+            </div>
+            <p class="eleccion-desc">
+                Nos esforzamos por mantener el sistema en línea 24/7 durante el periodo electoral. Sin embargo, no nos hacemos responsables por interrupciones temporales causadas por fallos de proveedores de internet o mantenimientos de emergencia.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Estilos compartidos para las páginas legales */
+    .policy-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .policy-card {
+        padding: 2rem;
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+        .policy-card:hover {
+            transform: translateX(5px);
+            border-left-color: var(--color-info);
+        }
+
+    .policy-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.75rem;
+    }
+
+    .policy-icon {
+        width: 24px;
+        height: 24px;
+        opacity: 0.8;
+    }
+
+    .text-primary {
+        color: #3b82f6;
+    }
+
+    .text-success {
+        color: var(--color-success);
+    }
+
+    .text-warning {
+        color: var(--color-warning);
+    }
+
+    .text-danger {
+        color: #ef4444;
+    }
+
+    .text-info {
+        color: var(--color-info);
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

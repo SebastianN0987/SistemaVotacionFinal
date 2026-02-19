@@ -1,0 +1,125 @@
+﻿@{
+    ViewData["Title"] = "Políticas de Privacidad";
+}
+
+<div class="elecciones-container animate-fadeIn">
+    <div class="page-header text-center" style="text-align: center; margin-bottom: 3rem;">
+        <div class="icon-wrapper" style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: rgba(var(--color-success-rgb), 0.1); border-radius: 50%; margin-bottom: 1rem;">
+            <i data-lucide="shield-check" style="width: 36px; height: 36px; color: var(--color-success);"></i>
+        </div>
+        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">@ViewData["Title"]</h1>
+        <p class="text-muted" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+            Tu confianza es nuestra prioridad. Descubre cómo protegemos tus datos y garantizamos el secreto absoluto de tu voto.
+        </p>
+    </div>
+
+    <div class="policy-container">
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="file-search" class="policy-icon text-primary"></i>
+                <h3 class="eleccion-title">1. Recopilación de la Información</h3>
+            </div>
+            <p class="eleccion-desc">
+                Para participar en los procesos electorales, el Sistema de Voto Electrónico recopila únicamente la información estrictamente necesaria para validar su identidad (como número de identificación y correo electrónico). No almacenamos información adicional que no sea pertinente al proceso democrático.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="eye-off" class="policy-icon text-success"></i>
+                <h3 class="eleccion-title">2. Secreto del Voto</h3>
+            </div>
+            <p class="eleccion-desc">
+                Garantizamos la total anonimidad de sus elecciones. Una vez que su voto es emitido y registrado en la base de datos, este se desvincula de su perfil de usuario mediante procesos de encriptación. Es técnicamente imposible rastrear qué candidato u opción fue seleccionada por un votante específico.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="lock" class="policy-icon text-warning"></i>
+                <h3 class="eleccion-title">3. Seguridad de los Datos</h3>
+            </div>
+            <p class="eleccion-desc">
+                Implementamos medidas de seguridad de nivel industrial, incluyendo certificados SSL y conexiones seguras a nuestra base de datos, para evitar el acceso no autorizado, la alteración, divulgación o destrucción de su información personal y de los resultados electorales.
+            </p>
+        </div>
+
+        <div class="eleccion-card policy-card">
+            <div class="policy-header">
+                <i data-lucide="clock" class="policy-icon text-info"></i>
+                <h3 class="eleccion-title">4. Retención de Datos</h3>
+            </div>
+            <p class="eleccion-desc">
+                Los datos personales vinculados a la validación de identidad se conservarán únicamente durante el tiempo que la legislación vigente lo exija para fines de auditoría del proceso electoral, tras lo cual serán eliminados de forma segura.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Estilos específicos para la página de privacidad */
+    .policy-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 800px; /* Limita el ancho para mejor lectura */
+        margin: 0 auto; /* Centra el contenedor */
+    }
+
+    .policy-card {
+        padding: 2rem;
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+        .policy-card:hover {
+            transform: translateX(5px); /* Pequeño efecto de movimiento a la derecha al pasar el mouse */
+            border-left-color: var(--color-success);
+        }
+
+    .policy-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.75rem;
+    }
+
+    .policy-icon {
+        width: 24px;
+        height: 24px;
+        opacity: 0.8;
+    }
+
+    .text-primary {
+        color: #3b82f6;
+    }
+
+    .text-success {
+        color: var(--color-success);
+    }
+
+    .text-warning {
+        color: var(--color-warning);
+    }
+
+    .text-info {
+        color: var(--color-info);
+    }
+
+
+    .animate-fadeIn {
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

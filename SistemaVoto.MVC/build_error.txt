@@ -1,0 +1,16 @@
+  Determinando los proyectos que se van a restaurar...
+  Todos los proyectos están actualizados para la restauración.
+  SistemaVoto.Modelos -> C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.Modelos\bin\Debug\net8.0\SistemaVoto.Modelos.dll
+  SistemaVoto.ApiConsumer -> C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.ApiConsumer\bin\Debug\net8.0\SistemaVoto.ApiConsumer.dll
+  SistemaVoto.Data -> C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.Data\bin\Debug\net8.0\SistemaVoto.Data.dll
+C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\Controllers\EleccionesController.cs(32,76): error CS0117: 'EstadoEleccion' no contiene una definición para 'Finalizada' [C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\SistemaVoto.MVC.csproj]
+C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\Views\Elecciones\Detalle.cshtml(63,56): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\SistemaVoto.MVC.csproj]
+
+ERROR al compilar.
+
+C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\Views\Elecciones\Detalle.cshtml(63,56): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\SistemaVoto.MVC.csproj]
+C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\Controllers\EleccionesController.cs(32,76): error CS0117: 'EstadoEleccion' no contiene una definición para 'Finalizada' [C:\Users\Dreigon\Documents\proyecto-herramientas\SistemaVoto\SistemaVoto.MVC\SistemaVoto.MVC.csproj]
+    1 Advertencia(s)
+    1 Errores
+
+Tiempo transcurrido 00:00:02.40

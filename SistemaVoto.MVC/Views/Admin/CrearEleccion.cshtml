@@ -1,0 +1,323 @@
+@using SistemaVoto.Modelos
+@model EleccionViewModel
+@{
+    ViewData["Title"] = "Crear Eleccion";
+}
+
+<div class="form-container">
+    <div class="form-card glass-card">
+        <div class="form-header">
+            <a href="/Admin/Elecciones" class="btn btn-ghost btn-sm">
+                <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                Volver
+            </a>
+            <h1>
+                <i data-lucide="vote" style="width: 32px; height: 32px;"></i>
+                Crear Nueva Eleccion
+            </h1>
+            <p class="text-muted">Configure los parametros del proceso electoral</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-error">
+                <i data-lucide="alert-circle" style="width: 20px; height: 20px;"></i>
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form asp-action="CrearEleccion" method="post">
+            <div class="form-group">
+                <label asp-for="Titulo" class="form-label">
+                    <i data-lucide="type" style="width: 16px; height: 16px;"></i>
+                    Titulo de la Eleccion
+                </label>
+                <input asp-for="Titulo" class="form-control" placeholder="Ej: Elecciones Presidenciales 2025" />
+                <span asp-validation-for="Titulo" class="text-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Descripcion" class="form-label">
+                    <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
+                    Descripcion (Opcional)
+                </label>
+                <textarea asp-for="Descripcion" class="form-control" rows="3" placeholder="Descripcion del proceso electoral..."></textarea>
+                <span asp-validation-for="Descripcion" class="text-error"></span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="FechaInicioUtc" class="form-label">
+                        <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+                        Fecha de Inicio
+                    </label>
+                    <input asp-for="FechaInicioUtc" class="form-control" type="datetime-local" step="1" asp-format="{0:yyyy-MM-ddTHH:mm:ss}" />
+                    <span asp-validation-for="FechaInicioUtc" class="text-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="FechaFinUtc" class="form-label">
+                        <i data-lucide="calendar-check" style="width: 16px; height: 16px;"></i>
+                        Fecha de Fin
+                    </label>
+                    <input asp-for="FechaFinUtc" class="form-control" type="datetime-local" step="1" asp-format="{0:yyyy-MM-ddTHH:mm:ss}" />
+                    <span asp-validation-for="FechaFinUtc" class="text-error"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="Tipo" class="form-label">
+                        <i data-lucide="list" style="width: 16px; height: 16px;"></i>
+                        Tipo de Eleccion
+                    </label>
+                    <select asp-for="Tipo" class="form-control" id="selectTipo" onchange="toggleTipoEleccion()">
+                        <option value="Nominal">Nominal - Voto por candidato individual</option>
+                        <option value="Plancha">Plancha - Voto por lista/partido completo</option>
+                        <option value="Mixta">Mixta - Candidatos de diferentes listas</option>
+                    </select>
+                    <span asp-validation-for="Tipo" class="text-error"></span>
+                    <small class="text-muted">Nominal: 1 voto = 1 candidato. Plancha/Mixta: usa escanos.</small>
+                </div>
+
+                <div class="form-group">
+                <div class="form-group">
+                    <label asp-for="NumEscanos" class="form-label" id="lblNumEscanos">
+                        <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+                        Numero de Escanos
+                    </label>
+                    <input asp-for="NumEscanos" class="form-control" type="number" min="1" max="100" id="inputNumEscanos" oninput="validateSum()" />
+                    <span asp-validation-for="NumEscanos" class="text-error"></span>
+                    <small class="text-muted" id="helpNumEscanos">Solo aplica para Plancha y Mixta. En Nominal se ignora.</small>
+                </div>
+                </div>
+            </div>
+
+            <div class="form-row" id="divEscanosMixtos" style="display:none;">
+                <div class="form-group">
+                    <label asp-for="EscanosNominales" class="form-label">
+                        <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+                        Escaños Nominales
+                    </label>
+                    <input asp-for="EscanosNominales" class="form-control" type="number" min="0" oninput="validateSum()" />
+                    <span asp-validation-for="EscanosNominales" class="text-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="EscanosLista" class="form-label">
+                        <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+                        Escaños Lista
+                    </label>
+                    <input asp-for="EscanosLista" class="form-control" type="number" min="0" oninput="validateSum()" />
+                    <span asp-validation-for="EscanosLista" class="text-error"></span>
+                </div>
+                <small class="text-muted" style="grid-column: span 2;" id="sumValidationMsg">La suma debe ser igual al Número Total de Escaños.</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group form-check" style="align-self: center;">
+                    <input asp-for="UsaUbicacion" class="form-check-input" type="checkbox" id="checkUsaUbicacion" onchange="toggleModoUbicacion()" />
+                    <label asp-for="UsaUbicacion" class="form-check-label">Restringir por Ubicación Geográfica</label>
+                </div>
+
+                <div class="form-group" id="divModoUbicacion" style="display:none;">
+                    <label asp-for="ModoUbicacion" class="form-label">
+                        <i data-lucide="map" style="width: 16px; height: 16px;"></i>
+                        Modo de Restricción
+                    </label>
+                    <select asp-for="ModoUbicacion" asp-items="Html.GetEnumSelectList<ModoUbicacion>()" class="form-control"></select>
+                    
+                    <div id="divCheckboxUbicaciones" style="margin-top: 1rem; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; background: rgba(255,255,255,0.05);">
+                        <label class="form-label" style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Ubicaciones Permitidas</label>
+                        @if(ViewBag.Ubicaciones != null)
+                        {
+                            var ubis = (List<Ubicacion>)ViewBag.Ubicaciones;
+                            if(ubis.Any())
+                            {
+                                foreach(var u in ubis)
+                                {
+                                    <div class="form-check" style="margin-bottom: 0.25rem;">
+                                          <input type="checkbox" name="UbicacionesSeleccionadas" value="@u.Id" id="cb_@u.Id" class="form-check-input"
+                                                 @((Model.UbicacionesSeleccionadas != null && Model.UbicacionesSeleccionadas.Contains(u.Id)) ? "checked" : "") />
+                                          <label for="cb_@u.Id" class="form-check-label" style="cursor:pointer;">@u.Nombre <small class="text-muted">(@u.Tipo)</small></label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-muted text-sm">No hay ubicaciones registradas.</div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="Acceso" class="form-label">
+                        <i data-lucide="lock" style="width: 16px; height: 16px;"></i>
+                        Modo de Acceso
+                    </label>
+                    <select asp-for="Acceso" class="form-control" id="selectAcceso" onchange="updateCupoLabel()">
+                        <option value="Generada">Generar Credenciales (Automático)</option>
+                        <option value="Privada">Privada (Asignación Manual de Usuarios)</option>
+                        <option value="Publica">Pública (Cualquier usuario registrado)</option>
+                    </select>
+                    <span asp-validation-for="Acceso" class="text-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="CupoMaximo" class="form-label" id="lblCupo">
+                        <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+                        Cantidad de Usuarios
+                    </label>
+                    <input asp-for="CupoMaximo" class="form-control" type="number" min="0" />
+                    <span asp-validation-for="CupoMaximo" class="text-error"></span>
+                    <small class="text-muted" id="helpCupo">0 = Sin límite (sólo para manual/pública).</small>
+                </div>
+            </div>
+
+            <div class="form-group form-check">
+                <input asp-for="Activo" class="form-check-input" type="checkbox" />
+                <label asp-for="Activo" class="form-check-label">Activar eleccion al crear</label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+                    Crear Eleccion
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-container {
+        max-width: 700px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .form-card {
+        padding: 2.5rem;
+    }
+    
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .form-header h1 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin: 1rem 0 0.5rem;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+    
+    .form-actions {
+        margin-top: 2rem;
+        text-align: center;
+    }
+    
+    @@media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function toggleModoUbicacion() {
+            var check = document.getElementById('checkUsaUbicacion');
+            var div = document.getElementById('divModoUbicacion');
+            if (check && div) {
+                div.style.display = check.checked ? 'block' : 'none';
+            }
+        }
+
+        function updateCupoLabel() {
+            var select = document.getElementById('selectAcceso');
+            var lbl = document.getElementById('lblCupo');
+            var help = document.getElementById('helpCupo');
+            
+            if (!select || !lbl) return;
+
+            if (select.value === 'Generada') {
+                lbl.innerHTML = '<i data-lucide="users" style="width: 16px; height: 16px;"></i> Cantidad a Generar';
+                help.innerText = 'Número de usuarios ficticios a crear (Requerido > 0).';
+            } else if (select.value === 'Privada') {
+                lbl.innerHTML = '<i data-lucide="users" style="width: 16px; height: 16px;"></i> Cupo Máximo';
+                help.innerText = 'Límite de usuarios asignables (0 = Ilimitado).';
+            } else {
+                lbl.innerHTML = '<i data-lucide="users" style="width: 16px; height: 16px;"></i> Cupo Máximo';
+                help.innerText = 'Límite de votantes totales (0 = Ilimitado).';
+            }
+            lucide.createIcons();
+        }
+
+        function toggleTipoEleccion() {
+            var select = document.getElementById('selectTipo');
+            var div = document.getElementById('divEscanosMixtos');
+            var lblEscanos = document.getElementById('lblNumEscanos');
+            var helpEscanos = document.getElementById('helpNumEscanos');
+
+            if (select) {
+                if (div) {
+                    div.style.display = select.value === 'Mixta' ? 'grid' : 'none';
+                }
+                
+                if (lblEscanos && helpEscanos) {
+                    if (select.value === 'Nominal') {
+                         lblEscanos.innerHTML = '<i data-lucide="user" style="width: 16px; height: 16px;"></i> Cantidad de Ganadores (Puestos)';
+                         helpEscanos.innerText = 'Indique cuántos candidatos resultarán electos (ej: 1 para Presidente).';
+                    } else {
+                         lblEscanos.innerHTML = '<i data-lucide="users" style="width: 16px; height: 16px;"></i> Número de Escaños';
+                         helpEscanos.innerText = 'Total de curules a repartir entre las listas/partidos.';
+                    }
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        function validateSum() {
+            var total = parseInt(document.getElementById('inputNumEscanos').value) || 0;
+            var nom = parseInt(document.getElementById('EscanosNominales').value) || 0;
+            var list = parseInt(document.getElementById('EscanosLista').value) || 0;
+            var msg = document.getElementById('sumValidationMsg');
+            
+            if (msg) {
+                if (nom + list === total) {
+                    msg.innerHTML = '<span class="text-success"><i data-lucide="check" style="width:14px;height:14px"></i> Suma correcta</span>';
+                    msg.className = "text-success";
+                } else {
+                    msg.innerHTML = '<span class="text-error"><i data-lucide="x" style="width:14px;height:14px"></i> La suma ('+ (nom+list) +') no coincide con el total ('+ total +')</span>';
+                    msg.className = "text-error";
+                }
+                lucide.createIcons();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+            toggleModoUbicacion();
+            updateCupoLabel();
+            toggleTipoEleccion();
+            validateSum();
+        });
+    </script>
+}

@@ -1,0 +1,622 @@
+@using SistemaVoto.MVC.Services
+@using SistemaVoto.MVC.Controllers
+@model ResultadosViewModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+
+@{
+    ViewData["Title"] = "Resultados - " + Model.Eleccion.Titulo;
+    var apiBaseUrl = Configuration["Api:BaseUrl"] ?? "https://localhost:7101";
+}
+
+<div class="resultados-container-wrapper">
+    <!-- Header (Static) -->
+    <div class="resultados-header">
+        <div>
+            <a href="/Elecciones" class="btn btn-ghost btn-sm">
+                <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                Volver
+            </a>
+            <h1>@Model.Eleccion.Titulo</h1>
+            <p class="text-muted">Resultados electorales</p>
+        </div>
+        <div class="header-actions" style="display:flex; align-items:center; gap:1rem;">
+            <span id="signalr-status" style="display:inline-flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
+                <span id="signalr-dot" style="width:8px;height:8px;border-radius:50%;background:#888;display:inline-block;"></span>
+                <span id="signalr-text">Conectando...</span>
+            </span>
+            <a href="/Resultados/ExportarCsv/@Model.Eleccion.Id" class="btn btn-secondary">
+                <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+                Exportar CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Dynamic Content -->
+    <div id="resultados-content">
+        <partial name="_ResultadosPartial" model="Model" />
+    </div>
+</div>
+
+<style>
+    /* Global Styles for Page Structure (Partial styles are in partial) */
+    .resultados-container-wrapper { max-width: 1400px; margin: 0 auto; }
+    .resultados-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+    .resultados-header h1 { margin: 0.5rem 0 0; }
+    
+    @@media (max-width: 768px) {
+        .resultados-header { flex-direction: column; gap: 1rem; }
+    }
+
+    /* Stats Row - Horizontal Layout */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .stat-card-icon { 
+        width: 48px; height: 48px; border-radius: 12px; margin-bottom: 1rem;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .stat-card-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 0.25rem; }
+    .stat-card-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* --- Escaños / D'Hondt & Webster Modern Styles --- */
+    .escanos-section { margin-top: 2rem; }
+    .section-title { font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    
+    .escanos-comparison-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    @@media (max-width: 900px) { .escanos-comparison-grid { grid-template-columns: 1fr; } }
+    
+    /* Charts Grid - Side by Side */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    @@media (max-width: 900px) { 
+        .charts-grid { grid-template-columns: 1fr; } 
+    }
+
+    .metodo-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .metodo-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+    .method-header-clean { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
+    .icon-circle { 
+        width: 48px; height: 48px; border-radius: 12px; 
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .bg-orange-light { background: rgba(255, 170, 51, 0.15); }
+    .text-orange { color: #FFAA33; }
+    .bg-teal-light { background: rgba(85, 180, 212, 0.15); }
+    .text-teal { color: #55B4D4; }
+
+    .method-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .method-subtitle { font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 0.25rem; }
+
+    .escanos-grid-clean {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .escano-card-clean {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .escano-card-clean.is-winner { border-color: #FFAA33; background: rgba(255, 170, 51, 0.05); }
+    .escano-card-clean.is-winner-webster { border-color: #55B4D4; background: rgba(85, 180, 212, 0.05); }
+    .escano-card-clean.is-empty { opacity: 0.6; }
+
+    .escano-count { font-size: 1.5rem; font-weight: 800; line-height: 1; margin-bottom: 0.25rem; color: var(--text-primary); }
+    .escano-party { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .winner-indicator, .winner-indicator-webster {
+        position: absolute; top: 0; right: 0; 
+        width: 0; height: 0; 
+        border-style: solid; 
+    }
+    .winner-indicator { border-width: 0 16px 16px 0; border-color: transparent #FFAA33 transparent transparent; }
+    .winner-indicator-webster { border-width: 0 16px 16px 0; border-color: transparent #55B4D4 transparent transparent; }
+
+    .assignment-list-container { background: var(--bg-panel); border-radius: 12px; padding: 1rem; flex-grow: 1; }
+    .list-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.75rem; }
+    
+    .assignment-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .assignment-item { 
+        display: flex; align-items: center; justify-content: space-between; 
+        padding: 0.5rem 0.75rem; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);
+        font-size: 0.9rem;
+    }
+    .assignment-badge { 
+        background: var(--text-primary); color: var(--bg-primary); 
+        font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; 
+    }
+    .assignment-badge.bg-teal { background: #55B4D4; color: white; }
+    .assignment-party { font-weight: 500; margin-left: 0.5rem; margin-right: auto; }
+    .assignment-value { color: var(--text-muted); font-family: monospace; }
+    
+    .progress-cell { display: flex; align-items: center; gap: 0.5rem; }
+    .progress-bar { height: 6px; background-color: var(--accent); border-radius: 3px; }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+            
+            // Debug Check
+            if (typeof ApexCharts === 'undefined') {
+                console.error("ApexCharts library is NOT loaded!");
+                alert("Error crítico: La librería de gráficos no se ha cargado correctamente.");
+                return;
+            }
+
+            try {
+                // Initial Data from Server-Side Render
+                // Using standard serialization (safe escaping) to prevent syntax errors
+                var initialModel = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { 
+                    Eleccion = new { 
+                        Id = Model.Eleccion.Id, 
+                        Titulo = Model.Eleccion.Titulo, 
+                        Tipo = Model.Eleccion.Tipo.ToString(),
+                        Estado = Model.Eleccion.Estado.ToString()
+                    },
+                    Resultados = new {
+                        TotalVotos = Model.Resultados?.TotalVotos ?? 0,
+                        Listas = Model.Resultados?.Listas?.Select(l => (object)new {
+                            Id = l.Id,
+                            Nombre = l.Nombre,
+                            Votos = l.Votos,
+                            Porcentaje = l.Porcentaje
+                        }) ?? new List<object>(),
+                        Candidatos = Model.Resultados?.Candidatos?.Select(c => (object)new {
+                            Id = c.Id,
+                            Nombre = c.Nombre,
+                            PartidoPolitico = c.PartidoPolitico,
+                            Votos = c.Votos,
+                            Porcentaje = c.Porcentaje
+                        }) ?? new List<object>()
+                    }
+                }, new System.Text.Json.JsonSerializerOptions { 
+                    PropertyNamingPolicy = null // PascalCase to match JS expectations 
+                }));
+                
+                console.log("Initial Model Loaded:", initialModel);
+                initCharts(initialModel);
+                setupSignalR();
+                
+            } catch (err) {
+                console.error("Error formatting Initial Model or initializing charts:", err);
+            }
+        });
+        
+        // Configuration
+        const CURRENT_ELECCION_ID = @Model.Eleccion.Id;
+        const API_URL = '@apiBaseUrl';
+
+        // Helper to access properties case-insensitively
+        function getProp(obj, propName) {
+            if (!obj) return undefined;
+            if (obj[propName] !== undefined) return obj[propName];
+            var lower = propName.charAt(0).toLowerCase() + propName.slice(1);
+            if (obj[lower] !== undefined) return obj[lower];
+            return undefined;
+        }
+
+        // --- Chart Rendering Logic ---
+        function initCharts(model) {
+            if (!model) return;
+            
+            var resultados = getProp(model, "Resultados");
+            if (!resultados) {
+                console.warn("No 'Resultados' found in model");
+                return;
+            }
+            
+            var listas = getProp(resultados, "Listas") || [];
+            var candidatos = getProp(resultados, "Candidatos") || [];
+            var eleccion = getProp(model, "Eleccion");
+            var tipoEleccion = eleccion ? getProp(eleccion, "Tipo") : "Nominal";
+
+            console.log("Rendering Charts with:", { listasCount: listas.length, candidatosCount: candidatos.length, tipo: tipoEleccion });
+
+             // Prepare Data with Colors
+            var dataListas = listas.map((l, i) => ({
+                id: getProp(l, "Id"),
+                nombre: getProp(l, "Nombre"),
+                votos: getProp(l, "Votos"),
+                porcentaje: getProp(l, "Porcentaje"),
+                tipo: "Lista"
+            }));
+            
+            var dataCandidatos = candidatos.map((c, i) => ({
+                id: getProp(c, "Id"),
+                nombre: getProp(c, "Nombre"),
+                votos: getProp(c, "Votos"),
+                porcentaje: getProp(c, "Porcentaje"),
+                tipo: "Candidato"
+            }));
+
+            // Color Generation
+            function getDistinctColor(index) {
+                var hue = (index * 137.508) % 360; 
+                return `hsl(${hue}, 70%, 50%)`; 
+            }
+            
+            function makeNamesUnique(data) {
+                 data.forEach((d, idx) => {
+                     var baseName = "";
+                     if(d.nombre && d.nombre.indexOf('__ID__') > -1) {
+                          baseName = d.nombre.split('__ID__')[0];
+                     } else {
+                          baseName = d.nombre || ("Item " + idx);
+                     }
+                     var uniqueId = (d.id !== undefined && d.id !== null) ? d.id : ("idx" + idx);
+                     d.nombre = baseName + "__ID__" + uniqueId;
+                 });
+            }
+
+            makeNamesUnique(dataListas);
+            dataListas.forEach((d, i) => { d.color = getDistinctColor(i); });
+            
+            makeNamesUnique(dataCandidatos);
+            var globalIndex = dataListas.length; 
+            dataCandidatos.forEach((d, i) => { d.color = getDistinctColor(globalIndex + i); });
+            
+            // Render Helper
+            function renderBarChart(elementId, data, title) {
+                var el = document.querySelector(elementId);
+                if (!el) return;
+                
+                el.innerHTML = ""; // Clear
+                if (!data || data.length === 0) {
+                    el.innerHTML = "<div class='text-muted text-center p-3'>Sin datos para mostrar</div>";
+                    return;
+                }
+
+                function formatUniqueName(val) {
+                    if (!val) return "";
+                    var str = String(val);
+                    return str.indexOf('__ID__') > -1 ? str.split('__ID__')[0] : str;
+                }
+
+                var options = {
+                    series: [{ name: 'Votos', data: data.map(i => i.votos) }],
+                    chart: { type: 'bar', height: 300, background: 'transparent', toolbar: { show: false } },
+                    title: { text: title, align: 'left', style: { color: 'var(--text-primary)' } },
+                    plotOptions: { bar: { horizontal: true, borderRadius: 6, distributed: true, dataLabels: { position: 'top' } } },
+                    colors: data.map(i => i.color),
+                    dataLabels: { 
+                        enabled: true, 
+                        formatter: function(val, opts) {
+                             return val ? val.toLocaleString() : "0";
+                        }, 
+                        style: { fontSize: '12px' }, 
+                        offsetX: 10 
+                    },
+                    xaxis: { 
+                        categories: data.map(i => i.nombre), 
+                        labels: { 
+                            style: { colors: 'var(--text-muted)' }, 
+                            formatter: formatUniqueName 
+                        } 
+                    },
+                    yaxis: { 
+                        labels: { 
+                            style: { colors: 'var(--text-muted)' }, 
+                            formatter: formatUniqueName 
+                        } 
+                    },
+                    grid: { borderColor: 'var(--border-color)' },
+                    theme: { mode: document.documentElement.getAttribute('data-theme') || 'light' },
+                    tooltip: {
+                        y: { formatter: (val) => val.toLocaleString() },
+                        x: { formatter: (val) => formatUniqueName(val) }
+                    },
+                    legend: { 
+                        formatter: function(seriesName, opts) {
+                            var value = opts.w.globals.series[0][opts.seriesIndex];
+                            return formatUniqueName(seriesName) + " - " + (value !== undefined ? value : 0);
+                        }
+                    }
+                };
+                
+                try {
+                    new ApexCharts(el, options).render();
+                } catch(e) { console.error("Error rendering bar chart:", e); }
+            }
+
+            // Target Container
+            var chartContainer = document.querySelector("#chartResultados");
+            if(chartContainer) {
+                chartContainer.innerHTML = ""; // Clear existing
+
+                if (dataListas.length > 0) {
+                     var div = document.createElement("div"); div.id = "chartListas"; div.style.marginBottom = "20px";
+                     chartContainer.appendChild(div);
+                     renderBarChart("#chartListas", dataListas, "Votos por Lista");
+                }
+
+                if (dataCandidatos.length > 0 && (tipoEleccion === 'Mixta' || tipoEleccion === 'Nominal' || dataListas.length === 0)) {
+                     var div = document.createElement("div"); div.id = "chartCandidatos";
+                     chartContainer.appendChild(div);
+                     renderBarChart("#chartCandidatos", dataCandidatos, "Votos por Candidato");
+                }
+                
+                // Fallback if no charts rendered but container exists
+                if (dataListas.length === 0 && dataCandidatos.length === 0) {
+                    chartContainer.innerHTML = "<div class='text-center p-4 text-muted'><i data-lucide='bar-chart-2' style='width:48px;height:48px;opacity:0.5'></i><br>No hay votos registrados aun.</div>";
+                    lucide.createIcons();
+                }
+            }
+
+            // Pie Chart
+            var pieData = [];
+            if (tipoEleccion === 'Mixta') pieData = dataListas.concat(dataCandidatos);
+            else pieData = (dataListas.length > 0) ? dataListas : dataCandidatos;
+
+            var pieEl = document.querySelector("#chartDistribucion");
+            if (pieEl) {
+                pieEl.innerHTML = ""; // Clear
+                
+                if (pieData.length > 0) {
+                    function formatUniqueName(val) {
+                        if (!val) return "";
+                        var str = String(val);
+                        return str.indexOf('__ID__') > -1 ? str.split('__ID__')[0] : str;
+                    }
+
+                    var optionsPie = {
+                        series: pieData.map(i => i.votos),
+                        labels: pieData.map(i => i.nombre),
+                        chart: { type: 'donut', height: 350, background: 'transparent' },
+                        colors: pieData.map(i => i.color),
+                        plotOptions: { 
+                            pie: { 
+                                donut: { 
+                                    labels: { 
+                                        show: true, 
+                                        total: { 
+                                            show: true, 
+                                            label: 'Total', 
+                                            formatter: w => w.globals.seriesTotals.reduce((a,b)=>a+b, 0) 
+                                        },
+                                        name: { formatter: formatUniqueName },
+                                        value: { formatter: val => val }
+                                    } 
+                                } 
+                            } 
+                        },
+                        tooltip: { 
+                            y: { formatter: (val) => val.toLocaleString(), title: { formatter: s => formatUniqueName(s) + ":" } },
+                            x: { formatter: (val) => formatUniqueName(val) }
+                        },
+                        legend: { 
+                            formatter: function(seriesName, opts) {
+                                return formatUniqueName(seriesName) + " - " + opts.w.globals.series[opts.seriesIndex]
+                            }
+                        },
+                        theme: { mode: document.documentElement.getAttribute('data-theme') || 'light' }
+                    };
+                    try {
+                        new ApexCharts(pieEl, optionsPie).render();
+                    } catch (e) { console.error("Error rendering pie chart:", e); }
+                } else {
+                     pieEl.innerHTML = "<div class='text-center p-4 text-muted'>Sin datos de distribución</div>";
+                }
+            }
+        }
+
+        // --- SignalR Logic ---
+        function setSignalRStatus(status) {
+            var dot = document.getElementById('signalr-dot');
+            var text = document.getElementById('signalr-text');
+            if (!dot || !text) return;
+            
+            switch(status) {
+                case 'connected':
+                    dot.style.background = '#4ade80';
+                    text.textContent = 'En vivo';
+                    text.style.color = '#4ade80';
+                    break;
+                case 'reconnecting':
+                    dot.style.background = '#facc15';
+                    text.textContent = 'Reconectando...';
+                    text.style.color = '#facc15';
+                    break;
+                case 'disconnected':
+                    dot.style.background = '#ef4444';
+                    text.textContent = 'Desconectado';
+                    text.style.color = '#ef4444';
+                    break;
+                default:
+                    dot.style.background = '#888';
+                    text.textContent = 'Conectando...';
+                    text.style.color = 'var(--text-muted)';
+            }
+        }
+
+        var connection; // Global for debugging
+
+        function setupSignalR() {
+            if (typeof signalR === 'undefined') {
+                console.error("SignalR library not loaded!");
+                setSignalRStatus('disconnected');
+                return;
+            }
+            try {
+                var hubUrl = API_URL + "/hubs/votacion";
+                console.log("Conectando SignalR a: " + hubUrl);
+                setSignalRStatus('connecting');
+                
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(hubUrl) 
+                    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
+
+                connection.onreconnecting(function() {
+                    console.log("SignalR: Reconectando...");
+                    setSignalRStatus('reconnecting');
+                });
+
+                connection.onreconnected(function() {
+                    console.log("SignalR: Reconectado.");
+                    setSignalRStatus('connected');
+                    connection.send("JoinEleccion", CURRENT_ELECCION_ID.toString()).catch(err => console.error(err));
+                });
+
+                connection.onclose(function() {
+                    console.warn("SignalR: Conexión cerrada.");
+                    setSignalRStatus('disconnected');
+                });
+
+                connection.on("ActualizacionResultados", async function (id) {
+                    console.log("SignalR: Actualizacion recibida para eleccion " + id);
+                    if (id == CURRENT_ELECCION_ID) {
+                        await refreshDashboard();
+                    }
+                });
+
+                connection.start().then(function () {
+                    console.log("SignalR Conectado. ID: " + connection.connectionId);
+                    setSignalRStatus('connected');
+                    // Invoke with string to match Hub signature
+                    connection.send("JoinEleccion", CURRENT_ELECCION_ID.toString()).catch(err => console.error("Error uniéndose al grupo:", err));
+                }).catch(function (err) {
+                    console.error("SignalR Connection Error: " + err);
+                    setSignalRStatus('disconnected');
+                    setSignalRStatus('disconnected');
+                });
+
+            } catch (e) {
+                console.error("SignalR Setup Error", e);
+                setSignalRStatus('disconnected');
+            }
+        }
+
+        async function refreshDashboard() {
+            try {
+                // 1. Fetch HTML (Stats, Seats, Table)
+                var htmlRes = await fetch('/Resultados/GetResultadosPartial/' + CURRENT_ELECCION_ID);
+                if (htmlRes.ok) {
+                    var html = await htmlRes.text();
+                    var contentEl = document.getElementById("resultados-content");
+                    if (contentEl) {
+                        contentEl.innerHTML = html;
+                        lucide.createIcons(); // Refresh icons
+                    }
+                } else {
+                    console.error("Error fetching partial HTML:", htmlRes.status, htmlRes.statusText);
+                }
+
+                // 2. Fetch JSON (Data for Charts)
+                var jsonRes = await fetch('/Resultados/GetDatosGrafico/' + CURRENT_ELECCION_ID);
+                if (jsonRes.ok) {
+                    var result = await jsonRes.json();
+                    console.log("SignalR: Raw JSON response:", JSON.stringify(result).substring(0, 500));
+                    
+                    // Extraer data independientemente del casing (success/Success, data/Data)
+                    var isSuccess = result.success || result.Success;
+                    var chartData = result.data || result.Data;
+                    
+                    if (isSuccess && chartData) {
+                        console.log("SignalR: Refreshing charts with data:", chartData);
+                        initCharts(chartData);
+                    } else {
+                        console.warn("SignalR: Response was not successful or missing data:", result);
+                    }
+                } else {
+                    console.error("Error fetching chart data:", jsonRes.status, jsonRes.statusText);
+                }
+                
+                // Show toast or indicator
+                showUpdateNotification();
+
+            } catch (e) {
+                console.error("Error refreshing dashboard:", e);
+            }
+        }
+        
+        function showUpdateNotification() {
+            var div = document.createElement('div');
+            div.style.position = 'fixed';
+            div.style.bottom = '20px';
+            div.style.right = '20px';
+            div.style.background = 'var(--color-success)';
+            div.style.color = '#fff';
+            div.style.padding = '10px 20px';
+            div.style.borderRadius = '8px';
+            div.style.zIndex = 1000;
+            div.innerHTML = '<i data-lucide="refresh-cw" style="width:16px;height:16px;display:inline;margin-right:5px;"></i> Resultados actualizados';
+            document.body.appendChild(div);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                div.style.opacity = '0';
+                div.style.transition = 'opacity 0.5s';
+                setTimeout(() => div.remove(), 500);
+            }, 3000);
+        }
+
+        
+        // Diagnostic Tool (Re-added)
+        window.debugSignalR = async function() {
+            console.log("--- SignalR Diagnostics ---");
+            console.log("Connection State:", connection ? connection.state : "No connection object");
+            console.log("Current Election ID:", CURRENT_ELECCION_ID, "Type:", typeof CURRENT_ELECCION_ID);
+            
+            if (connection && connection.state === "Connected") {
+                try {
+                    console.log("Attempting to re-join group...");
+                    await connection.send("JoinEleccion", CURRENT_ELECCION_ID.toString());
+                    console.log("JoinEleccion invoked successfully.");
+                    alert("SignalR: Conectado y unido al grupo correctamente.");
+                } catch (e) {
+                    console.error("JoinEleccion failed:", e);
+                    alert("SignalR Error: " + e.toString());
+                }
+            } else {
+                console.warn("Cannot test JoinEleccion: Not connected.");
+                alert("SignalR: No conectado. Estado: " + (connection ? connection.state : "Nulo"));
+            }
+            console.log("---------------------------");
+        };
+    </script>
+}
