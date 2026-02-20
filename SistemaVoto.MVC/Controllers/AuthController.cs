@@ -79,17 +79,56 @@ public class AuthController : Controller
     /// Muestra el formulario de login
     /// </summary>
     [HttpGet]
-    public IActionResult Login(string? returnUrl = null)
+    /// <summary>
+    /// Procesa el login con Identity (Versión Manual y Directa)
+    /// </summary>
+    [HttpPost]
+    // [ValidateAntiForgeryToken] // Mantenemos esto comentado
+    public async Task<IActionResult> Login(LoginViewModel model)
     {
-        // Si ya esta autenticado, redirigir
-        if (User.Identity?.IsAuthenticated == true)
+        // 1. Si no envían datos, volvemos a la vista
+        if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
         {
-            return RedirectToHome();
+            ModelState.AddModelError(string.Empty, "Por favor ingrese correo y contraseña.");
+            return View(model);
         }
 
-        return View(new LoginViewModel { ReturnUrl = returnUrl });
-    }
+        // 2. Buscar al usuario directamente en la base de datos
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+        {
+            // Error explícito para que se muestre en el HTML
+            ModelState.AddModelError(string.Empty, "El usuario no existe en la base de datos.");
+            return View(model);
+        }
 
+        // 3. Verificar la contraseña manualmente
+        var passwordCorrect = await _userManager.CheckPasswordAsync(user, model.Password);
+        if (!passwordCorrect)
+        {
+            ModelState.AddModelError(string.Empty, "La contraseña es incorrecta.");
+            return View(model);
+        }
+
+        // 4. INICIO DE SESIÓN FORZADO (El mismo método que sí funcionó en el Registro)
+        await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
+
+        // 5. Redirección según rol
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Contains("Administrador"))
+        {
+            return RedirectToAction("Dashboard", "Admin");
+        }
+
+        // Si hay una URL de retorno válida, ir allí
+        if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+        {
+            return Redirect(model.ReturnUrl);
+        }
+
+        // Redirección por defecto para usuarios normales
+        return RedirectToAction("Index", "Elecciones");
+    }
     /// <summary>
     /// Procesa el login con Identity
     /// </summary>
