@@ -155,7 +155,8 @@ namespace SistemaVoto.MVC
                 }
             }
 
-            var adminEmail = "admin@sistemavoto.com";
+            // AQUÍ ESTÁ EL CAMBIO: Nuevo usuario administrador maestro
+            var adminEmail = "master@sistemavoto.com";
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
             if (adminUser == null)
@@ -167,7 +168,8 @@ namespace SistemaVoto.MVC
                     EmailConfirmed = true
                 };
 
-                var result = await userManager.CreateAsync(adminUser, "Admin123!");
+                // AQUÍ ESTÁ EL CAMBIO: Nueva contraseña maestra
+                var result = await userManager.CreateAsync(adminUser, "Master123!");
 
                 if (result.Succeeded)
                 {
